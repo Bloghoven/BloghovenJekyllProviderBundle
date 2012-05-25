@@ -1,0 +1,28 @@
+{
+    "name": "bloghoven/jekyll-provider-bundle",
+    "type": "symfony-bundle",
+    "description": "Jekyll provider bundle for Bloghoven",
+    "homepage": "http://github.com/Bloghoven",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Magnus Nordlander",
+            "email": "magnus@nordlander.se"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.2",
+        "symfony/symfony": ">=2.0.0",
+        "bloghoven/blog-bundle": "dev-master",
+        "pagerfanta/pagerfanta": "dev-master",
+        "knplabs/gaufrette": "dev-master"
+    },
+    "suggest": {
+        "knplabs/knp-gaufrette-bundle": "dev-master"
+    },
+    "autoload": {
+        "psr-0": { "Bloghoven\\Bundle\\JekyllProviderBundle": "" }
+    },
+
+    "target-dir": "Bloghoven/Bundle/JekyllProviderBundle"
+}
