@@ -8,7 +8,7 @@ use Bloghoven\Bundle\JekyllProviderBundle\ContentProvider\JekyllContentProvider;
 
 use Symfony\Component\Finder\Finder;
 
-use Gaufrette\Path;
+use Gaufrette\Util\Path;
 
 /**
 * 

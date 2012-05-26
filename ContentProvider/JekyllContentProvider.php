@@ -5,17 +5,17 @@ namespace Bloghoven\Bundle\JekyllProviderBundle\ContentProvider;
 use Bloghoven\Bundle\JekyllProviderBundle\Entity\Entry;
 use Bloghoven\Bundle\JekyllProviderBundle\Entity\Category;
 
-use Bloghoven\Bundle\BlogBundle\ContentProvider\Interfaces\ContentProviderInterface;
+use Bloghoven\Bundle\BlogBundle\ContentProvider\Interfaces\CachableContentProviderInterface;
 use Bloghoven\Bundle\BlogBundle\ContentProvider\Interfaces\ImmutableCategoryInterface;
 
 use Pagerfanta\Pagerfanta;
 use Pagerfanta\Adapter\ArrayAdapter;
 
 use Gaufrette\Filesystem;
-use Gaufrette\Path;
+use Gaufrette\Util\Path;
 use Gaufrette\StreamWrapper;
 
-class JekyllContentProvider implements ContentProviderInterface
+class JekyllContentProvider implements CachableContentProviderInterface
 {
   protected $filesystem;
   protected $file_extension;
@@ -33,6 +33,24 @@ class JekyllContentProvider implements ContentProviderInterface
     return $this->filesystem;
   }
 
+  public function getLastModificationTime()
+  {
+    $keys = $this->getUnfilteredEntryKeys();
+
+    $last_date = 0;
+
+    foreach ($keys as $key)
+    {
+      $mtime = $this->filesystem->mtime($key);
+      if ($mtime > $last_date)
+      {
+        $last_date = $mtime;
+      }
+    }
+
+    return \DateTime::createFromFormat('U', $last_date);
+  }
+
   protected function validatePermalinkId($permalink_id)
   {
     if (strpos($permalink_id, '..') !== false)
@@ -48,11 +66,11 @@ class JekyllContentProvider implements ContentProviderInterface
 
   /* ------------------ ContentProviderInterface methods ---------------- */
 
-  protected function getUnfilteredEntries()
+  protected function getUnfilteredEntryKeys()
   {
     $extension = $this->file_extension;
 
-    $keys = array_filter($this->filesystem->keys(), function ($key) use ($extension) {
+    return array_filter($this->filesystem->keys(), function ($key) use ($extension) {
       $normalized_key = Path::normalize($key);
 
       $path_info = pathinfo($normalized_key);
@@ -76,13 +94,15 @@ class JekyllContentProvider implements ContentProviderInterface
 
       return true;
     });
+  }
 
+  protected function getUnfilteredEntries()
+  {
     $self = $this;
-
     return array_map(function($key) use (&$self)
     {
       return new Entry($self->getFile($key), $self);
-    }, $keys);
+    }, $this->getUnfilteredEntryKeys());
   }
 
   protected function getPublishedEntries()

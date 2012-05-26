@@ -8,7 +8,7 @@ use Bloghoven\Bundle\JekyllProviderBundle\ContentProvider\JekyllContentProvider;
 use Symfony\Component\Yaml\Yaml as YamlParser;
 
 use Gaufrette\File;
-use Gaufrette\Path;
+use Gaufrette\Util\Path;
 
 /**
 *
@@ -47,6 +47,13 @@ class Entry implements ImmutableEntryInterface
 
   public function getPermalinkId()
   {
+    $this->loadContent();
+
+    if (isset($this->front_matter['permalink']))
+    {
+      return $this->front_matter['permalink'];
+    }
+
     return $this->getPathname();
   }
 
