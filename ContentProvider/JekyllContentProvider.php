@@ -118,9 +118,7 @@ class JekyllContentProvider implements CachableContentProviderInterface
   {
     $filtered = $this->getPublishedEntries();
 
-    usort($filtered, function($a, $b) {
-      return $b->getPostedAt()->getTimestamp() - $a->getPostedAt()->getTimestamp();
-    });
+    $filtered = $this->sortEntries($filtered);
 
     return new Pagerfanta(new ArrayAdapter($filtered));
   }
@@ -137,11 +135,24 @@ class JekyllContentProvider implements CachableContentProviderInterface
       return in_array($category, $entry->getCategories());
     });
 
-    usort($entries, function($a, $b) {
-      return $b->getPostedAt()->getTimestamp() - $a->getPostedAt()->getTimestamp();
-    });
+    $entries = $this->sortEntries($entries);
 
     return new Pagerfanta(new ArrayAdapter($entries));
+  }
+
+  protected function sortEntries($entries)
+  {
+    usort($entries, function($a, $b) {
+      $time_diff = $b->getPostedAt()->getTimestamp() - $a->getPostedAt()->getTimestamp();
+
+      if ($time_diff == 0)
+      {
+        return strcmp($a->getPathname(), $b->getPathname());
+      }
+      return $time_diff;
+    });
+
+    return $entries;
   }
 
   protected function getCategories()

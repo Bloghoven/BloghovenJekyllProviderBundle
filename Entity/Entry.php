@@ -122,7 +122,7 @@ class Entry implements ImmutableEntryInterface
         $this->parsed_category_names = explode('/', $matches['categories']);
       }
 
-      $this->parsed_date = \DateTime::createFromFormat('Y-m-d', $matches['date']);
+      $this->parsed_date = new \DateTime($matches['date']);
       $this->parsed_title = $matches['title'];
     }
   }
@@ -134,7 +134,7 @@ class Entry implements ImmutableEntryInterface
 
     if (isset($this->front_matter['date']))
     {
-      return \DateTime::createFromFormat('Y-m-d', $this->front_matter['date']);
+      return new \DateTime($this->front_matter['date']);
     }
 
     return $this->parsed_date;
