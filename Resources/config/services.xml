@@ -13,6 +13,10 @@
             <argument type="service" id="bloghoven.jekyll_provider.filesystem" />
             <argument />
 
+            <call method="setStopwatch">
+                <argument type="service" id="debug.stopwatch" on-invalid="ignore" />
+            </call>
+
             <tag name="bloghoven.content_provider" id="jekyll" />
         </service>
     </services>

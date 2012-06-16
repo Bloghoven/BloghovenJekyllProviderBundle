@@ -8,6 +8,8 @@ use Bloghoven\Bundle\JekyllProviderBundle\Entity\Category;
 use Bloghoven\Bundle\BlogBundle\ContentProvider\Interfaces\CachableContentProviderInterface;
 use Bloghoven\Bundle\BlogBundle\ContentProvider\Interfaces\ImmutableCategoryInterface;
 
+use Symfony\Component\HttpKernel\Debug\Stopwatch;
+
 use Pagerfanta\Pagerfanta;
 use Pagerfanta\Adapter\ArrayAdapter;
 
@@ -20,12 +22,20 @@ class JekyllContentProvider implements CachableContentProviderInterface
   protected $filesystem;
   protected $file_extension;
   protected $depth;
+  protected $stopwatch;
+
+  protected $entry_keys;
 
   public function __construct(Filesystem $filesystem, $file_extension = 'md', $depth = 0)
   {
     $this->filesystem = $filesystem;
     $this->file_extension = $file_extension;
     $this->depth = (int)$depth;
+  }
+
+  public function setStopwatch(Stopwatch $stopwatch = null)
+  {
+    $this->stopwatch = $stopwatch;
   }
 
   public function getFilesystem()
@@ -68,41 +78,80 @@ class JekyllContentProvider implements CachableContentProviderInterface
 
   protected function getUnfilteredEntryKeys()
   {
-    $extension = $this->file_extension;
+    if (!$this->entry_keys)
+    {
+      $stopwatch_event = "Jekyll Bloghoven: Getting Unfiltered Entry keys";
 
-    return array_filter($this->filesystem->keys(), function ($key) use ($extension) {
-      $normalized_key = Path::normalize($key);
-
-      $path_info = pathinfo($normalized_key);
-
-      $explosion = explode('/', $path_info['dirname']);
-
-      if (end($explosion) !== '_posts')
+      $this->usingStopWatch(function($stopwatch) use ($stopwatch_event)
       {
-        return false;
-      }
+        $stopwatch->start($stopwatch_event, 'bloghoven');
+      });
 
-      if ($path_info['extension'] != $extension)
+      $extension = $this->file_extension;
+
+      $this->entry_keys = array_filter($this->filesystem->keys(), function ($key) use ($extension) {
+        $normalized_key = Path::normalize($key);
+
+        $path_info = pathinfo($normalized_key);
+
+        $explosion = explode('/', $path_info['dirname']);
+
+        if (end($explosion) !== '_posts')
+        {
+          return false;
+        }
+
+        if ($path_info['extension'] != $extension)
+        {
+          return false;
+        }
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}-.+?\.\w+$/', $path_info['basename']))
+        {
+          return false;
+        }
+
+        return true;
+      });
+
+      $this->usingStopWatch(function($stopwatch) use ($stopwatch_event)
       {
-        return false;
-      }
+        $stopwatch->stop($stopwatch_event);
+      });
+    }
 
-      if (!preg_match('/^\d{4}-\d{2}-\d{2}-.+?\.\w+$/', $path_info['basename']))
-      {
-        return false;
-      }
+    return $this->entry_keys;
+  }
 
-      return true;
-    });
+  protected function usingStopwatch($callable)
+  {
+    if ($this->stopwatch)
+    {
+      $callable($this->stopwatch);
+    }
   }
 
   protected function getUnfilteredEntries()
   {
+    $stopwatch_event = "Jekyll Bloghoven: Getting Unfiltered Entries";
+
+    $this->usingStopWatch(function($stopwatch) use ($stopwatch_event)
+    {
+      $stopwatch->start($stopwatch_event, 'bloghoven');
+    });
+
     $self = $this;
-    return array_map(function($key) use (&$self)
+    $entries = array_map(function($key) use (&$self)
     {
       return new Entry($self->getFile($key), $self);
     }, $this->getUnfilteredEntryKeys());
+
+    $this->usingStopWatch(function($stopwatch) use ($stopwatch_event)
+    {
+      $stopwatch->stop($stopwatch_event);
+    });
+
+    return $entries;
   }
 
   protected function getPublishedEntries()
