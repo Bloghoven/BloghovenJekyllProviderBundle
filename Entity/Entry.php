@@ -54,7 +54,14 @@ class Entry implements ImmutableEntryInterface
       return $this->front_matter['permalink'];
     }
 
-    return $this->getPathname();
+    // Removing the extension is okay, because the provider only allows one extension
+    $filename = pathinfo($this->getPathname(), PATHINFO_FILENAME);
+
+    // Removing _posts is okay because all entries have to be in a _posts dir
+    $permalink_id = str_replace('_posts', '', $this->getPath()).'/'.$filename;
+    $permalink_id = str_replace('//', '/', trim($permalink_id, '/'));
+
+    return $permalink_id;
   }
 
   public function getTitle()
