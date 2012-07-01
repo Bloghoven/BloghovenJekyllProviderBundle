@@ -126,7 +126,7 @@ class Entry implements ImmutableEntryInterface
 
       if ($matches['categories'] != '')
       {
-        $this->parsed_category_names = explode('/', $matches['categories']);
+        $this->parsed_category_names = explode('/', $matches['categories'], -1);
       }
 
       $this->parsed_date = new \DateTime($matches['date']);
