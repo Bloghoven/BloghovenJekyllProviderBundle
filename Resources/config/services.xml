@@ -17,6 +17,10 @@
                 <argument type="service" id="debug.stopwatch" on-invalid="ignore" />
             </call>
 
+            <call method="setCache">
+                <argument type="service" id="bloghoven.cache" on-invalid="ignore" />
+            </call>
+
             <tag name="bloghoven.content_provider" id="jekyll" />
         </service>
     </services>

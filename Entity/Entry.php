@@ -95,6 +95,19 @@ class Entry implements ImmutableEntryInterface
     {
       $content = $this->file->getContent();
 
+      if ($this->content_provider->hasCache())
+      {
+        $cache_key = 'entry-'.md5($content);
+
+        if ($this->content_provider->getCache()->contains($cache_key))
+        {
+          $data = $this->content_provider->getCache()->fetch($cache_key);
+          $this->front_matter = $data['front_matter'];
+          $this->contents = $data['contents'];
+          return;
+        }
+      }
+
       $matches = array();
 
       if (preg_match("/---(.*?)---(.*)/ms", $content, $matches))
@@ -109,6 +122,16 @@ class Entry implements ImmutableEntryInterface
       }
 
       $this->contents = preg_replace("/\{\%.*?\%\}/", '', $this->contents);
+
+      if ($this->content_provider->hasCache())
+      {
+        $data = array(
+          'front_matter' => $this->front_matter,
+          'contents' => $this->contents,
+        );
+
+        $this->content_provider->getCache()->save($cache_key, $data);
+      }
     }
   }
 

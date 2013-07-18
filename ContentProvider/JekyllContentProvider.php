@@ -8,7 +8,9 @@ use Bloghoven\Bundle\JekyllProviderBundle\Entity\Category;
 use Bloghoven\Bundle\BlogBundle\ContentProvider\Interfaces\CachableContentProviderInterface;
 use Bloghoven\Bundle\BlogBundle\ContentProvider\Interfaces\ImmutableCategoryInterface;
 
-use Symfony\Component\HttpKernel\Debug\Stopwatch;
+use Symfony\Component\Stopwatch\Stopwatch;
+
+use Doctrine\Common\Cache\Cache;
 
 use Pagerfanta\Pagerfanta;
 use Pagerfanta\Adapter\ArrayAdapter;
@@ -26,6 +28,8 @@ class JekyllContentProvider implements CachableContentProviderInterface
 
   protected $entry_keys;
 
+  protected $cache;
+
   public function __construct(Filesystem $filesystem, $file_extension = 'md', $depth = 0)
   {
     $this->filesystem = $filesystem;
@@ -36,6 +40,21 @@ class JekyllContentProvider implements CachableContentProviderInterface
   public function setStopwatch(Stopwatch $stopwatch = null)
   {
     $this->stopwatch = $stopwatch;
+  }
+
+  public function setCache(Cache $cache = null)
+  {
+    $this->cache = $cache;
+  }
+
+  public function getCache()
+  {
+    return $this->cache;
+  }
+
+  public function hasCache()
+  {
+    return $this->cache !== null;
   }
 
   public function getFilesystem()
@@ -80,7 +99,7 @@ class JekyllContentProvider implements CachableContentProviderInterface
   {
     if (!$this->entry_keys)
     {
-      $stopwatch_event = "Jekyll Bloghoven: Getting Unfiltered Entry keys";
+      $stopwatch_event = "jekyllContentProvider.getUnfilteredEntryKeys";
 
       $this->usingStopWatch(function($stopwatch) use ($stopwatch_event)
       {
@@ -133,7 +152,7 @@ class JekyllContentProvider implements CachableContentProviderInterface
 
   protected function getUnfilteredEntries()
   {
-    $stopwatch_event = "Jekyll Bloghoven: Getting Unfiltered Entries";
+    $stopwatch_event = "jekyllContentProvider.getUnfilteredEntries";
 
     $this->usingStopWatch(function($stopwatch) use ($stopwatch_event)
     {
@@ -156,20 +175,48 @@ class JekyllContentProvider implements CachableContentProviderInterface
 
   protected function getPublishedEntries()
   {
+    $stopwatch_event = "jekyllContentProvider.getPublishedEntries";
+
+    $this->usingStopWatch(function($stopwatch) use ($stopwatch_event)
+    {
+      $stopwatch->start($stopwatch_event, 'bloghoven');
+    });
+
     $unfiltered = $this->getUnfilteredEntries();
 
-    return array_filter($unfiltered, function ($entry) {
+    $ret = array_filter($unfiltered, function ($entry) {
       return !$entry->isDraft();
     });
+
+    $this->usingStopWatch(function($stopwatch) use ($stopwatch_event)
+    {
+      $stopwatch->stop($stopwatch_event);
+    });
+
+    return $ret;
   }
 
   public function getHomeEntriesPager()
   {
+    $stopwatch_event = "jekyllContentProvider.getHomeEntriesPager";
+
+    $this->usingStopWatch(function($stopwatch) use ($stopwatch_event)
+    {
+      $stopwatch->start($stopwatch_event, 'bloghoven');
+    });
+
     $filtered = $this->getPublishedEntries();
 
     $filtered = $this->sortEntries($filtered);
 
-    return new Pagerfanta(new ArrayAdapter($filtered));
+    $ret = new Pagerfanta(new ArrayAdapter($filtered));
+
+    $this->usingStopWatch(function($stopwatch) use ($stopwatch_event)
+    {
+      $stopwatch->stop($stopwatch_event);
+    });
+
+    return $ret;
   }
 
   public function getEntriesPagerForCategory(ImmutableCategoryInterface $category)
